@@ -121,6 +121,30 @@ li.paddingLeft3{
   padding-top: 6px;
 }
 
+/* all landing pages*/
+.addNewLandingPageBox{
+    margin-bottom:1em;
+    border: 2px solid;
+    border-color: #3097D1;
+    border-radius: 36px;
+    height:455px;
+    /*max-height: 46% !important;
+    min-height: 22% !important;*/
+}
+
+.centerAlignBoxContent{
+    position: absolute;
+    float: left;
+    top: 50%;
+    text-align: center;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #3097D1;
+}
+
+.addNewLandingPageBox a:hover {
+    text-decoration: none;
+}
 
 /* landing pages css */
 

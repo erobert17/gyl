@@ -1258,6 +1258,7 @@ class LandingPageController extends Controller
         
         $landingPages = DB::table('landingPages')->where('user_id', $user->id)->get()->toArray();
         $landingPagesArray = DB::table('landingPages')->where('user_id', $user->id)->get()->toArray();
+        $numOfActiveLPsForUser = DB::table('landingPages')->where('user_id', $user->id)->count();
 
         $userIndos = DB::table('userAssignedIndustries')->where(['userId' => $user->id, ])->pluck('industryNumber')->toArray();
 
@@ -1304,15 +1305,48 @@ class LandingPageController extends Controller
           $userLink = '';
         }
 
+        $userIndos = DB::table('userAssignedIndustries')->where(['userId' => $user->id, ])->pluck('industryNumber')->toArray();
+
+        if( in_array(1, $userIndos) && !in_array(2, $userIndos)){
+          $landingPagePrefabs = DB::table('landingpagePrefabs')->where(['industry' => 1])->get();#realestate
+        }else if( !in_array(1, $userIndos) && in_array(2, $userIndos)){
+          $landingPagePrefabs = DB::table('landingpagePrefabs')->where(['industry' => 2])->get();#ecommerce
+        }else{
+          $landingPagePrefabs = DB::table('landingpagePrefabs')->get();#All
+        }
+        
+        $allLPsNotYetMadeByUser = [];
+        $allOfUsersLPTypeNames = DB::table('landingPages')->where('user_id', $user->id)->pluck('type')->toArray();
+
+        foreach($landingPagePrefabs as $prefab){
+          if( !in_array($prefab->typeName, $allOfUsersLPTypeNames) ){
+            array_push($allLPsNotYetMadeByUser, $prefab);
+          }
+        }
+
+        $numberOfLPsToPrint = count($landingPagesArray);
+        $numberOfLPsToPrint = $numberOfLPsToPrint+1;
+      
         //if this user isn't subscribed, return the warning with the page.
         if(Auth::user()->subscribed('main') == false){
           //Must be the author, send a vaiable to be used as a warrning title.
           $warningTitle = "You haven't <a href='/subscribe'>subscribed</a> yet. This landing page's link will only work for others once you subscribe.";
           //var_dump($warningTitle);
-          return view('pages.allLandingPages', compact('hintText', 'userHintState','landingPages', 'userLink', 'user', 'warningTitle'));
+          return view('pages.allLandingPages', compact('hintText', 'userHintState','landingPages', 'userLink', 'user', 'warningTitle', 'landingPagesArray', 'userIndos', 'landingPagePrefabs', 'allLPsNotYetMadeByUser', 'numberOfLPsToPrint','numOfActiveLPsForUser'));
         }
-        return view('pages.allLandingPages', compact('hintText', 'userHintState', 'landingPages', 'userLink', 'user'));
+        return view('pages.allLandingPages', compact('hintText', 'userHintState', 'landingPages', 'userLink', 'user', 'landingPagesArray', 'userIndos', 'landingPagePrefabs', 'allLPsNotYetMadeByUser', 'numberOfLPsToPrint','numOfActiveLPsForUser'));
 
+    }
+
+    #used to create new LP. Represents a add button on all landing pages page.
+    public function createLp($lpId, $userId){
+      $user = Auth::user();
+
+      $landingPagePrefab = DB::table('landingpagePrefabs')->where(['id' => $lpId])->first();#All
+
+      DB::table('landingPages')->insert(['user_id' => $user->id, 'title' => $landingPagePrefab->title, 'secondaryTitle' => $landingPagePrefab->secondTitle, 'type' => $landingPagePrefab->typeName]);
+
+      return redirect()->action('LandingPageController@allLandingPages');
     }
 
     public function saveLandingPage1(Request $request){

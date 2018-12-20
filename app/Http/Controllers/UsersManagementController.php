@@ -155,14 +155,6 @@ class UsersManagementController extends Controller
                 'activated'         => 1
             ]);
 
-            #create all defaul lps for user
-            $allPrefabLBs = DB::table('landingpagePrefabs')->get();
-     
-            foreach ($allPrefabLBs as $prefab) {
-               
-                DB::table('landingPages')->insert(['user_id' => $user->id, 'title' => $prefab->title, 'secondaryTitle' => $prefab->secondTitle, 'type' => $prefab->typeName]);
-            }
-
             if($request->users_industries1 == 1){
                 DB::table('userAssignedIndustries')->insert(['userId' => $user->id, 'industryNumber' => 1]);
                 //Realestate

@@ -23,6 +23,7 @@ use View;
 use DB;
 use Auth;
 use Carbon\Carbon;
+use DateTime;
 
 class ProfilesController extends Controller
 {
@@ -681,6 +682,7 @@ class ProfilesController extends Controller
           $ends_at = str_replace(']', '', $ends_at);
           $ends_at = str_replace('"', '', $ends_at);
           $now = Carbon::now();
+
           $now = (string)$now;
           //echo $ends_at.' > '.$now.'<br>';
           if ($ends_at < $now){
@@ -790,17 +792,16 @@ class ProfilesController extends Controller
 
         $timeStampsOrders = DB::table('orders')->orderBy('created', 'ASC')->where([['userId', '=', $user->id], ['created', '>', $one_week_ago] ] )->pluck('created')->toArray();
 
-        
         //Combine all three arrays
         $timeStampsRaw = array_merge($timeStampsViews, $timeStampsLeads);
         $timeStampsRaw = array_merge($timeStampsRaw, $timeStampsOrders);
         #$timeStampsRaw = $timeStampsViews->merge($timeStampsLeads);
         #$timeStampsRaw = $timeStampsRaw->merge($timeStampsOrders);
-
         sort($timeStampsRaw);
 
         #echo '$timeStampsRaw: count: '.count($timeStampsRaw).'<br>';
         //Remove duplicate dates in raw after ordering
+        
         $timeStamps = [];
         foreach ($timeStampsRaw as $thisTimeStamp) {
           $thisDate = substr($thisTimeStamp, 0, strpos($thisTimeStamp, ' '));
@@ -856,6 +857,7 @@ class ProfilesController extends Controller
         $timeStampsAdded = [];
 
         //Views
+        $saveGraphViewsDataDates = [];
         if(isset($timeStampsViews)){
           //cut off all after space in timeStamps
           for ($i=0; $i < count($timeStampsViews); $i++) { 
@@ -875,16 +877,10 @@ class ProfilesController extends Controller
               if(!in_array($timeStampsViews[$i], $alreadyTimestamp)){
                   array_push($alreadyTimestamp, $timeStampsViews[$i]);
                   array_push($graphViewsData, $tempCount); 
+                  array_push($saveGraphViewsDataDates, $timeStampsViews[$i]);
                   //echo 'TempCount: '.$tempCount;
               }
               
-          }
-
-          // add zeros to timeStampsDecoded dates not in graphLeadsData
-          for ($i=0; $i < count($timeStampsDecoded); $i++) { 
-            if(!in_array($timeStampsDecoded[$i], $timeStampsViews)){
-              array_splice($graphViewsData, $i, 0, 0);
-            }
           }
 
           $timeStampsViews = $alreadyTimestamp;
@@ -905,6 +901,7 @@ class ProfilesController extends Controller
         }
 
         //Leads
+        $saveGraphLeadsDates =[];
         if(isset($timeStampsLeads)){
           //cut off all after space in timeStamps
           for ($i=0; $i < count($timeStampsLeads); $i++) { 
@@ -924,17 +921,12 @@ class ProfilesController extends Controller
               if(!in_array($timeStampsLeads[$i], $alreadyTimestamp)){
                   array_push($alreadyTimestamp, $timeStampsLeads[$i]);
                   array_push($graphLeadsData, $tempCount); 
+                  array_push($saveGraphLeadsDates, $timeStampsLeads[$i]);
                   //echo 'TempCount: '.$tempCount;
               }
               
           }
 
-          // add zeros to timeStampsDecoded dates not in graphLeadsData
-          for ($i=0; $i < count($timeStampsDecoded); $i++) { 
-            if(!in_array($timeStampsDecoded[$i], $timeStampsLeads)){
-              array_splice($graphLeadsData, $i, 0, 0);
-            }
-          }
           $timeStampsLeads = $alreadyTimestamp;
          
           $graphLeadsData = json_encode($graphLeadsData);
@@ -953,6 +945,8 @@ class ProfilesController extends Controller
         }
 
         //Orders
+
+        $saveGraphOrdersDates =[];
         if(isset($timeStampsOrders)){
           //cut off all after space in timeStamps
           for ($i=0; $i < count($timeStampsOrders); $i++) { 
@@ -971,18 +965,13 @@ class ProfilesController extends Controller
               }
               if(!in_array($timeStampsOrders[$i], $alreadyTimestamp)){
                   array_push($alreadyTimestamp, $timeStampsOrders[$i]);
-                  array_push($graphOrdersData, $tempCount); 
+                  array_push($graphOrdersData, $tempCount);
+                  array_push($saveGraphOrdersDates, $timeStampsOrders[$i]);
                   //echo 'TempCount: '.$tempCount;
               }
               
           }
 
-          // add zeros to timeStampsDecoded dates not in graphLeadsData
-          for ($i=0; $i < count($timeStampsDecoded); $i++) { 
-            if(!in_array($timeStampsDecoded[$i], $timeStampsOrders)){
-              array_splice($graphOrdersData, $i, 0, 0);
-            }
-          }
 
           $timeStampsOrders = $alreadyTimestamp;
          
@@ -1000,11 +989,202 @@ class ProfilesController extends Controller
             //since the user might have open houses, add hopen houses to pagecount
             $countPages = $countPages + count($propertiesIds);
         }
+
+
+        $timeStamps = json_decode($timeStamps);
+        $graphViewsData = json_decode($graphViewsData);
+        $graphLeadsData = json_decode($graphLeadsData);
+        $graphOrdersData = json_decode($graphOrdersData);
+
+        #create list of last seven days
+        $lastSevenDays = [];
+        #We need to have seven days in the graph, so create a list of the last seven days without hours and minutes
+        for ($i=6; $i > 0 ; $i--) { 
+            $tempDay = Carbon::now()->subDays($i)->format('Y-m-d');
+            #echo $tempDay.' --- ';
+            if(!in_array($tempDay, $timeStamps)){ #if this day isn't in timeStamps, n
+              array_push($timeStamps, $tempDay);
+            }
+        }
+
+        sort($timeStamps);
+        sort($saveGraphLeadsDates);
+        sort($saveGraphOrdersDates);
+        #should have all 7 past days including today, sorted and ready
         
+        # create trigger values to detect if there's no values. this is used in loops below to add all zeros to graph list if no views,leads or orders in last 7 days
+        $atLeastOneView = False;
+        if(count($saveGraphViewsDataDates)>0){
+          $atLeastOneView = True;
+        }
+
+        $atLeastOneLead = False;
+        if(count($saveGraphLeadsDates)>0){
+          $atLeastOneLead = True;
+        }
+
+        $today = Carbon::now()->format('Y-m-d');
+        
+
+        $atLeastOneOrder = False;
+        if(count($saveGraphOrdersDates) > 0){
+          $atLeastOneOrder = True;
+        }
+
+
+        #Go through past 7 days, add zero values for each day that has no value
+        foreach ($timeStamps as $timeStamp) {
+          #views
+          if(!in_array($timeStamp, $saveGraphViewsDataDates)){# if this day isn't in the array of timeStamps to be displayed on bottom of graph
+            #go through timeStamps and find what dates it's less than or more than and place inbetween
+            #we must do it this way instead of just sorting dates because we have to add a zero value to the corrisponding place in $graphViewsData
+              if($atLeastOneView != False){
+                
+                for ($t=0; $t < count($saveGraphViewsDataDates); $t++) {
+                  if (new DateTime($timeStamp) < new DateTime($saveGraphViewsDataDates[$t])){
+                    array_splice($graphViewsData, $t, 0, 0);
+                    array_splice($saveGraphViewsDataDates, $t, 0, $timeStamp);
+                    $t = count($saveGraphViewsDataDates) +1;
+                  }else if ( ($t+1) < count($saveGraphViewsDataDates) and 
+                    new DateTime($timeStamp) < new DateTime($saveGraphViewsDataDates[$t]) and
+                    new DateTime($timeStamp) > new DateTime($saveGraphViewsDataDates[$t+1])){
+                      array_splice($graphViewsData, $t, 0, 0);
+                      array_splice($saveGraphViewsDataDates, $t, 0, $timeStamp);
+                      $t = count($saveGraphViewsDataDates) +1;
+                  }else if(new DateTime($timeStamp) > new DateTime($saveGraphViewsDataDates[$t]) and $t == count($saveGraphViewsDataDates) ){
+                    
+                    array_push($graphViewsData, 0);
+                    array_push($saveGraphViewsDataDates, $timeStamp);
+                    
+                  }else if ( new DateTime($timeStamp) == new DateTime($today) and !in_array($timeStamp, $saveGraphViewsDataDates) ){
+                    array_push($graphViewsData, 0);
+                    array_push($saveGraphViewsDataDates, $timeStamp);
+                  }
+
+
+                  sort($saveGraphViewsDataDates);
+
+                }#endforloop
+
+              }else{
+                array_push($graphViewsData, 0);
+                array_push($saveGraphViewsDataDates, $timeStamp);
+              }
+          }#ends views for loop
+
+          #Leads
+          if(!in_array($timeStamp, $saveGraphLeadsDates)){# if this day isn't in the array of timeStamps to be displayed on bottom of graph
+            #go through timeStamps and find what dates it's less than or more than and place inbetween
+            #we must do it this way instead of just sorting dates because we have to add a zero value to the corrisponding place in $graphViewsData
+              if($atLeastOneLead != False){
+                for ($t=0; $t < count($saveGraphLeadsDates); $t++) {
+
+                  if (new DateTime($timeStamp) < new DateTime($saveGraphLeadsDates[$t])){
+                    array_splice($graphLeadsData, $t, 0, 0);
+                    array_splice($saveGraphLeadsDates, $t, 0, $timeStamp);
+                    $t = count($saveGraphLeadsDates) +1;
+                  }else if ( ($t+1) < count($saveGraphLeadsDates) and new DateTime($timeStamp) < new DateTime($saveGraphLeadsDates[$t]) and new DateTime($timeStamp) > new DateTime($saveGraphLeadsDates[$t+1])){
+                      array_splice($graphLeadsData, $t, 0, 0);
+                      array_splice($saveGraphLeadsDates, $t, 0, $timeStamp);
+                      $t = count($saveGraphLeadsDates) +1;
+                  }else if(new DateTime($timeStamp) > new DateTime($saveGraphLeadsDates[$t]) and $t == count($saveGraphLeadsDates) ){
+                    array_push($graphLeadsData, 0);
+                    array_push($saveGraphLeadsDates, $timeStamp);
+                  }else if ( new DateTime($timeStamp) == new DateTime($today) and !in_array($timeStamp, $saveGraphLeadsDates) ){
+                    array_push($graphLeadsData, 0);
+                    array_push($saveGraphLeadsDates, $timeStamp);
+                  }
+
+                  sort($saveGraphLeadsDates);
+
+                }
+
+              }else{
+                array_push($graphLeadsData, 0);
+                array_push($saveGraphLeadsDates, $timeStamp);
+              }
+
+          }#ends views for loop
+
+
+          #Orders
+          if(!in_array($timeStamp, $saveGraphOrdersDates)){# if this day isn't in the array of timeStamps to be displayed on bottom of graph
+            #go through timeStamps and find what dates it's less than or more than and place inbetween
+            #we must do it this way instead of just sorting dates because we have to add a zero value to the corrisponding place in $graphViewsData
+              if($atLeastOneOrder != False){
+                for ($t=0; $t < count($saveGraphOrdersDates); $t++) {
+                  #echo $saveGraphOrdersDates[$t].'****';
+
+                  if (new DateTime($timeStamp) < new DateTime($saveGraphOrdersDates[$t])){
+                    array_splice($graphOrdersData, $t, 0, 0);
+                    array_splice($saveGraphOrdersDates, $t, 0, $timeStamp);
+                    $t = count($saveGraphOrdersDates) +1;
+                  }else if ( ($t+1) < count($saveGraphOrdersDates) and new DateTime($timeStamp) < new DateTime($saveGraphOrdersDates[$t]) and new DateTime($timeStamp) > new DateTime($saveGraphOrdersDates[$t+1])){
+                      array_splice($graphOrdersData, $t, 0, 0);
+                      array_splice($saveGraphOrdersDates, $t, 0, $timeStamp);
+                      $t = count($saveGraphOrdersDates) +1;
+                  }else if(new DateTime($timeStamp) > new DateTime($saveGraphOrdersDates[$t]) and $t == count($saveGraphOrdersDates) ){
+                    array_push($graphOrdersData, 0);
+                    array_push($saveGraphOrdersDates, $timeStamp);
+                  }else if ( new DateTime($timeStamp) == new DateTime($today) and !in_array($timeStamp, $saveGraphOrdersDates) ){
+                    array_push($graphOrdersData, 0);
+                    array_push($saveGraphOrdersDates, $timeStamp);
+                  }
+
+                  sort($saveGraphOrdersDates);
+
+                }
+
+              }else{
+                array_push($graphOrdersData, 0);
+                array_push($saveGraphOrdersDates, $timeStamp);
+              }
+
+          }#ends views for loop
+
+        }
+        #last of graph stuff
+        #double checking the views, leads and orders have at least the same number of entries as timestamp days, should be 7 days
+        if(count($graphViewsData) < count($timeStamps) ){
+          for ($i=count($graphViewsData); $i < count($timeStamps) ; $i++) { 
+            array_push($graphViewsData, 0);
+          }
+        }
+        if(count($graphLeadsData) < count($timeStamps) ){
+          for ($i=count($graphLeadsData); $i < count($timeStamps) ; $i++) { 
+            array_push($graphLeadsData, 0);
+          }
+        }
+        if(count($graphOrdersData) < count($timeStamps) ){
+          for ($i=count($graphOrdersData); $i < count($timeStamps) ; $i++) { 
+            array_push($graphOrdersData, 0);
+          }
+        }
+
+        #Landing pages available
+        
+        #create all default lps for user
+        $allPrefabLBs = DB::table('landingpagePrefabs')->get();
+        
+
+        #delete any default subscriptions created by file system. This is not where admin created users are activated
+        DB::table('subscriptions')->where('user_id', '=', $user->id)->delete();
+        /*
+        foreach ($allPrefabLBs as $prefab) {
+               
+                DB::table('landingPages')->insert(['user_id' => $user->id, 'title' => $prefab->title, 'secondaryTitle' => $prefab->secondTitle, 'type' => $prefab->typeName]);
+        }
+        */
+
+        $timeStamps = json_encode($timeStamps);
+        $graphViewsData = json_encode($graphViewsData);
+        $graphLeadsData = json_encode($graphLeadsData);
+        $graphOrdersData = json_encode($graphOrdersData);
 
         $orders = DB::table('orders')->where(['userId' => $user->id])->count();
         $userHintState = DB::table('users')->where(['id' => $user->id])->pluck('helpBubbleState');
         
+
         return view('pages.user.dashboard', compact('hintText' ,'userHintState','user', 'countPages', 'totalViews', 'isRealestate', 'orders', 'timeStamps', 'timeStampsOrders', 'timeStampsViews', 'graphLeadsData', 'graphOrdersData', 'leads','graphViewsData', 'difference1', 'difference2', 'difference3'));
     }
 

@@ -191,17 +191,6 @@ class ActivateController extends Controller
             array_push($thisUsersIndustries, $userIndustries[$i]->industryNumber);
         }
 
-        #create all defaul lps for user
-        $allPrefabLBs = DB::table('landingpagePrefabs')->get();
-        
-
-        #delete any default subscriptions created by file system. This is not where admin created users are activated
-        DB::table('subscriptions')->where('user_id', '=', $user->id)->delete();
-
-        foreach ($allPrefabLBs as $prefab) {
-               
-                DB::table('landingPages')->insert(['user_id' => $user->id, 'title' => $prefab->title, 'secondaryTitle' => $prefab->secondTitle, 'type' => $prefab->typeName]);
-        }
 
         Log::info('Registered user successfully activated. ' . $currentRoute . '. ', [$user]);
 

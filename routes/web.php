@@ -281,6 +281,11 @@ Route::group(['middleware'=> ['auth', 'activated', 'currentUser']], function () 
         'uses'      => 'LandingPageController@allLandingPages'
     ]);
 
+    Route::get('createLP/{lpId}/{userId}', [
+        'uses'      => 'LandingPageController@createLP'
+    ]);
+    
+
     //landingpage1
     Route::get('landingPageStats', ['uses'      => 'LandingPageController@landingPageStats']);
 

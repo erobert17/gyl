@@ -146,7 +146,10 @@
          $count = 0;
          $iterate = 0;// used to select numbered array inside $page
          $landingPageNumber = '1';
+         $alreadyDisplayedAddNewLP = False;
+         $countLPsPrinted = 0;
          ?>
+
 
 
 
@@ -187,6 +190,7 @@
                         $landingPageNumber = '9';
                     }
                     
+                    $countLPsPrinted++;
                     ?>
                     <div class="col-md-6">
                         <div class="panel panel-primary">
@@ -231,9 +235,31 @@
                         <?php endif; ?>
 
                     </div>
+
+
+                    <?php if($countLPsPrinted == $numOfActiveLPsForUser): ?>
+                        <?php if($alreadyDisplayedAddNewLP == False && $numOfActiveLPsForUser % 2 != 0): ?>
+                            <?php if(count($landingPagesArray) == 0 || $numOfActiveLPsForUser != count($landingPagePrefabs)): ?>
+
+                                <?php $alreadyDisplayedAddNewLP = True;?>
+                                
+                                <div class="col-md-6 addNewLandingPageBox">
+                                        <a href="#" class="createNewLandingPage centerAlignBoxContent">
+
+                                    <span style="font-size: 74px;">+</span><br>
+                                    <p style="font-size: 25px;">ADD NEW PAGE</p>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    <?php endif; ?>
+
+
+
                 <?php endif; ?>
 
                     <?php $iterate++;?>
+
 
                 <?php if($iterate <= 6 && isset($page[$iterate]->type) ): ?>
 
@@ -266,6 +292,7 @@
                             {
                                 $landingPageNumber = '9';
                             }
+                            $countLPsPrinted++;
                         ?>
                         <div class="col-md-6">
                             <div class="panel panel-primary">
@@ -305,12 +332,15 @@
                                 </div>
 
                             </div>
+
+
+
                         </div>
                 <?php endif; ?>
 
                 <?php $iterate = 0;?>
 
-            </div>
+            </div><!-- end row-->
             
 
             <?php if($count == 0): ?>
@@ -322,10 +352,55 @@
             
 
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            
+            <?php if($alreadyDisplayedAddNewLP == False && $numOfActiveLPsForUser % 2 == 0): ?>
+                <?php if(count($landingPagesArray) == 0 || $countLPsPrinted == $numOfActiveLPsForUser): ?>
+                    <?php $alreadyDisplayedAddNewLP = True;?>
+                    <div class="row">
+                        <div class="col-md-6 addNewLandingPageBox" >
+                            <a href="#" class="createNewLandingPage centerAlignBoxContent">
+                                <span style="font-size: 74px;">+</span><br>
+                                <p style="font-size: 25px;">ADD NEW PAGE</p>
+                            </a>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
         
         </form>
 
     </div>
+
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $('.createNewLandingPage').click(function(){
+                $("#createLandingPageModal").modal({show: true});
+            });
+        });
+    </script>
+
+  <!-- Modal -->
+  <div class="modal fade" id="createLandingPageModal" tabindex="-1" role="dialog" aria-labelledby="createLandingPageModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header" style="padding-bottom: 34px;">
+          <h5 class="modal-title" id="createLandingPageModalTitle" style="border-radius:30px;">Create New Landing Page</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body text-center">
+          <p>Select the landing page you'd like to create.</p>
+            <?php $__currentLoopData = $allLPsNotYetMadeByUser; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $landingPage): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <a  href='createLP/<?php echo e($landingPage->id); ?>/<?php echo e($user->id); ?>'><?php echo e($landingPage->typeName); ?></a><br>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <?php $__env->stopSection(); ?>
 
