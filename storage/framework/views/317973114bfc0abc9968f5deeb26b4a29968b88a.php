@@ -235,16 +235,17 @@
                         <?php endif; ?>
 
                     </div>
-
+                    
 
                     <?php if($countLPsPrinted == $numOfActiveLPsForUser): ?>
+                        
                         <?php if($alreadyDisplayedAddNewLP == False && $numOfActiveLPsForUser % 2 != 0): ?>
                             <?php if(count($landingPagesArray) == 0 || $numOfActiveLPsForUser != count($landingPagePrefabs)): ?>
 
                                 <?php $alreadyDisplayedAddNewLP = True;?>
                                 
                                 <div class="col-md-6 addNewLandingPageBox">
-                                        <a href="#" class="createNewLandingPage centerAlignBoxContent">
+                                        <a href="listAllLPsToAdd" class="centerAlignBoxContent">
 
                                     <span style="font-size: 74px;">+</span><br>
                                     <p style="font-size: 25px;">ADD NEW PAGE</p>
@@ -352,13 +353,13 @@
             
 
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-            
+
             <?php if($alreadyDisplayedAddNewLP == False && $numOfActiveLPsForUser % 2 == 0): ?>
                 <?php if(count($landingPagesArray) == 0 || $countLPsPrinted == $numOfActiveLPsForUser): ?>
                     <?php $alreadyDisplayedAddNewLP = True;?>
                     <div class="row">
                         <div class="col-md-6 addNewLandingPageBox" >
-                            <a href="#" class="createNewLandingPage centerAlignBoxContent">
+                            <a href="listAllLPsToAdd" class="centerAlignBoxContent">
                                 <span style="font-size: 74px;">+</span><br>
                                 <p style="font-size: 25px;">ADD NEW PAGE</p>
                             </a>

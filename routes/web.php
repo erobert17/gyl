@@ -89,6 +89,9 @@ Route::group(['middleware' => 'web'], function() {
     Route::post('/deleteOpenhouse', ['as' => 'deleteOpenhouse', 'uses' => 'LandingPageController@deleteOpenhouse']);
     Route::post('/saveShowingInquiry', ['as' => 'saveShowingInquiry', 'uses' => 'LandingPageController@saveShowingInquiry']);
 
+    /* Delete Landing Page*/
+    Route::any('/deleteLandingPage/{landingPageId}', ['uses' => 'LandingPageController@deleteLandingPage']);
+
     // Route to show user avatar
     Route::get('/uploads/users/id/{id}/avatar/{image}', [
         'uses'      => 'LandingPageController@userProfileAvatar'
@@ -279,6 +282,10 @@ Route::group(['middleware'=> ['auth', 'activated', 'currentUser']], function () 
 
     Route::get('allLandingPages', [
         'uses'      => 'LandingPageController@allLandingPages'
+    ]);
+
+    Route::get('listAllLPsToAdd', [
+        'uses'      => 'LandingPageController@listAllLPsToAdd'
     ]);
 
     Route::get('createLP/{lpId}/{userId}', [

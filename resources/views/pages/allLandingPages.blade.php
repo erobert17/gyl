@@ -238,16 +238,17 @@
                         @endif
 
                     </div>
-
+                    
 
                     @if($countLPsPrinted == $numOfActiveLPsForUser)
+                        
                         @if($alreadyDisplayedAddNewLP == False && $numOfActiveLPsForUser % 2 != 0)
                             @if(count($landingPagesArray) == 0 || $numOfActiveLPsForUser != count($landingPagePrefabs))
 
                                 <?php $alreadyDisplayedAddNewLP = True;?>
                                 
                                 <div class="col-md-6 addNewLandingPageBox">
-                                        <a href="#" class="createNewLandingPage centerAlignBoxContent">
+                                        <a href="listAllLPsToAdd" class="centerAlignBoxContent">
 
                                     <span style="font-size: 74px;">+</span><br>
                                     <p style="font-size: 25px;">ADD NEW PAGE</p>
@@ -354,13 +355,13 @@
             
 
         @endforeach
-            
+
             @if($alreadyDisplayedAddNewLP == False && $numOfActiveLPsForUser % 2 == 0)
                 @if(count($landingPagesArray) == 0 || $countLPsPrinted == $numOfActiveLPsForUser)
                     <?php $alreadyDisplayedAddNewLP = True;?>
                     <div class="row">
                         <div class="col-md-6 addNewLandingPageBox" >
-                            <a href="#" class="createNewLandingPage centerAlignBoxContent">
+                            <a href="listAllLPsToAdd" class="centerAlignBoxContent">
                                 <span style="font-size: 74px;">+</span><br>
                                 <p style="font-size: 25px;">ADD NEW PAGE</p>
                             </a>

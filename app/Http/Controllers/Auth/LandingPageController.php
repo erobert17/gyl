@@ -909,6 +909,15 @@ class LandingPageController extends Controller
         }
         return view('pages.yourLP', compact('landingPage', 'userLink', 'user'));
 
+    } 
+
+    public function deleteLandingPage($landingPageId){
+      $user = Auth::user();
+
+      DB::table('landingPages')->where(['user_id' => $user->id, 'id' => $landingPageId])->delete();
+
+      return redirect()->action('LandingPageController@allLandingPages');
+
     }
 
     public function editLandingPage1(){
@@ -1259,7 +1268,6 @@ class LandingPageController extends Controller
         $landingPages = DB::table('landingPages')->where('user_id', $user->id)->get()->toArray();
         $landingPagesArray = DB::table('landingPages')->where('user_id', $user->id)->get()->toArray();
         $numOfActiveLPsForUser = DB::table('landingPages')->where('user_id', $user->id)->count();
-
         $userIndos = DB::table('userAssignedIndustries')->where(['userId' => $user->id, ])->pluck('industryNumber')->toArray();
 
         //unset($landingPages->{$key})
@@ -1326,6 +1334,8 @@ class LandingPageController extends Controller
 
         $numberOfLPsToPrint = count($landingPagesArray);
         $numberOfLPsToPrint = $numberOfLPsToPrint+1;
+
+        
       
         //if this user isn't subscribed, return the warning with the page.
         if(Auth::user()->subscribed('main') == false){
@@ -1335,6 +1345,101 @@ class LandingPageController extends Controller
           return view('pages.allLandingPages', compact('hintText', 'userHintState','landingPages', 'userLink', 'user', 'warningTitle', 'landingPagesArray', 'userIndos', 'landingPagePrefabs', 'allLPsNotYetMadeByUser', 'numberOfLPsToPrint','numOfActiveLPsForUser'));
         }
         return view('pages.allLandingPages', compact('hintText', 'userHintState', 'landingPages', 'userLink', 'user', 'landingPagesArray', 'userIndos', 'landingPagePrefabs', 'allLPsNotYetMadeByUser', 'numberOfLPsToPrint','numOfActiveLPsForUser'));
+
+    }
+
+
+    public function listAllLPsToAdd(){
+              $user = Auth::user();
+        $userId = $user->id;
+
+        $hintText = DB::table('hintText')->get();
+        // noob hint bubble, turn state to 1 if not already
+        $userHintState = DB::table('users')->where('id', $user->id)->pluck('helpBubbleState');
+        $userHintState = $userHintState[0];
+        if($userHintState == 0){
+          DB::table('users')->where(['id' => $user->id])->update(['helpBubbleState' => 1]);
+          $userHintState = 1;
+        }
+        
+        $landingPages = DB::table('landingPages')->get()->toArray();
+        $landingPagesArray = DB::table('landingPages')->where('user_id', $user->id)->get()->toArray();
+        $numOfActiveLPsForUser = DB::table('landingPages')->where('user_id', $user->id)->count();
+        $userIndos = DB::table('userAssignedIndustries')->where(['userId' => $user->id, ])->pluck('industryNumber')->toArray();
+
+        //unset($landingPages->{$key})
+        //Remove landing pages from array if user isn't signed up for that specific industry,
+        //Must be updated if we add more industry types or landing pages to existing industries
+
+        for ($i=0; $i <= count($landingPages); $i++) {
+
+          if( in_array(1, $userIndos) == false ){
+            //
+            if(isset($landingPages[$i])){
+
+              if($landingPages[$i]->type == 'Home Valuation' || $landingPages[$i]->type == 'Property Details' || $landingPages[$i]->type == 'Open Houses'){
+                unset($landingPagesArray[$i]);
+                //unset($landingPages->{$key})
+              }
+            
+            }  
+
+          }else if( in_array(2, $userIndos) == false ){
+            //
+
+            if(isset($landingPages[$i])){
+
+              if($landingPages[$i]->type == 'New Product Countdown' || $landingPages[$i]->type == 'New Product Coupon' || $landingPages[$i]->type == 'Single Item Shopping Cart' || $landingPages[$i]->type == 'Digital Download'){
+                unset($landingPagesArray[$i]);
+              }
+
+            }
+            
+          }
+
+        }
+
+
+        $landingPagesArray = array_chunk($landingPagesArray, 2);
+        $landingPages = (object) $landingPagesArray;
+
+        $userLink = DB::table('users')->where('id', $user->id)->take(1)->get();
+        if(isset($userLink[0])){
+          $userLink = $userLink[0]->randomUserLink;
+        }else{
+          $userLink = '';
+        }
+
+        $userIndos = DB::table('userAssignedIndustries')->where(['userId' => $user->id, ])->pluck('industryNumber')->toArray();
+
+        if( in_array(1, $userIndos) && !in_array(2, $userIndos)){
+          $landingPagePrefabs = DB::table('landingpagePrefabs')->where(['industry' => 1])->get()->toArray();#realestate
+        }else if( !in_array(1, $userIndos) && in_array(2, $userIndos)){
+          $landingPagePrefabs = DB::table('landingpagePrefabs')->where(['industry' => 2])->get()->toArray();#ecommerce
+        }else{
+          $landingPagePrefabs = DB::table('landingpagePrefabs')->get()->toArray();#All
+        }
+        
+        $allLPsNotYetMadeByUser = [];
+        $allOfUsersLPTypeNames = DB::table('landingPages')->where('user_id', $user->id)->pluck('type')->toArray();
+
+        foreach($landingPagePrefabs as $prefab){
+          if( !in_array($prefab->typeName, $allOfUsersLPTypeNames) ){
+            array_push($allLPsNotYetMadeByUser, $prefab);
+          }
+        }
+
+        $numberOfLPsToPrint = count($landingPagesArray);
+        $numberOfLPsToPrint = $numberOfLPsToPrint+1;
+      
+        //if this user isn't subscribed, return the warning with the page.
+        if(Auth::user()->subscribed('main') == false){
+          //Must be the author, send a vaiable to be used as a warrning title.
+          $warningTitle = "You haven't <a href='/subscribe'>subscribed</a> yet. This landing page's link will only work for others once you subscribe.";
+          //var_dump($warningTitle);
+          return view('pages.listAllLPsToAdd', compact('hintText', 'userHintState','landingPages', 'userLink', 'user', 'warningTitle', 'landingPagesArray', 'userIndos', 'landingPagePrefabs', 'allLPsNotYetMadeByUser', 'numberOfLPsToPrint','numOfActiveLPsForUser'));
+        }
+        return view('pages.listAllLPsToAdd', compact('hintText', 'userHintState', 'landingPages', 'userLink', 'user', 'landingPagesArray', 'userIndos', 'landingPagePrefabs', 'allLPsNotYetMadeByUser', 'numberOfLPsToPrint','numOfActiveLPsForUser'));
 
     }
 

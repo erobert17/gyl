@@ -80,6 +80,28 @@
         <input type="hidden" name="userID" value="{{ $user->id }}" >
         <input type="hidden" name="_token" value="{{ csrf_token() }}">
 
+        <div class="row" style="text-align: center;">
+                <div class="col-sm-8 col-sm-offset-4 col-md-8 col-md-offset-4 col-lg-6 col-lg-offset-3">
+
+                    <div class="panel-body panel panel-primary @role('admin', true) panel-info  @endrole">
+                        <div class="centerBlock">
+                            <div class="row">
+                                <div class="col-sm-8 col-md-8" style="padding-top: 0.5em;color:#954120;">
+                                    <strong>Delete This Landing Page</strong>
+                                </div>
+                                <div class="col-sm-4 col-md-4">
+                                    <a href="/deleteLandingPage/{{$landingPage[0]->id}}">
+                                        <button type="button" class="btn btn-danger text-center">Delete Landing Page</button>
+                                    </a>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+
+                </div>
+        </div>
+
         <div class="row">
             <div class="col-md-12">
 
@@ -173,6 +195,8 @@
                               @endforeach
                             </div>
                         </div>
+
+
 
                         <div class="row vert-offset-bottom-1 vert-offset-top-2">
                             <div class="col-md-4">

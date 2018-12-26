@@ -97,7 +97,30 @@
                         &nbsp;<strong class="copiedLink">Copied!</strong>
                     </div>
                 </div>
-           
+
+                <div class="row" style="text-align: center;">
+                    
+                    <div class="col-sm-12 col-md-12  col-lg-12">
+
+                        <div class="panel-body panel panel-primary <?php if (Auth::check() && Auth::user()->hasRole('admin', true)): ?> panel-info  <?php endif; ?>">
+                            <div class="centerBlock">
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-8" style="padding-top: 0.5em;color:#954120;">
+                                        <strong>Delete This Landing Page</strong>
+                                    </div>
+                                    <div class="col-sm-12 col-md-4">
+                                        <a href="/deleteLandingPage/<?php echo e($landingPage[0]->id); ?>">
+                                            <button type="button" class="btn btn-danger text-center">Delete Landing Page</button>
+                                        </a>
+                                    </div>
+                                </div>
+                            
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                   
                 <script type="text/javascript">
                     new Clipboard('#copy');
                     $(document).ready(function(){
